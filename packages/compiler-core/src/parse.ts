@@ -67,6 +67,7 @@ const decodeMap: Record<string, string> = {
 }
 
 export const defaultParserOptions: MergedParserOptions = {
+  // 分隔符
   delimiters: [`{{`, `}}`],
   getNamespace: () => Namespaces.HTML,
   getTextMode: () => TextModes.DATA,
@@ -101,6 +102,11 @@ export interface ParserContext {
   onWarn: NonNullable<ErrorHandlingOptions['onWarn']>
 }
 
+/*
+*  1. 代码信息配置（行、列、偏移量、分隔符 {{ }}、源代码等）
+*  2. 创建根节点的信息；
+*
+* */
 export function baseParse(
   content: string,
   options: ParserOptions = {}
@@ -127,6 +133,7 @@ function createParserContext(
         ? defaultParserOptions[key]
         : rawOptions[key]
   }
+  // 记录的信息有：代码的位置（行、列、偏移量、分隔符 {{ }}、源代码等）
   return {
     options,
     column: 1,
@@ -140,6 +147,16 @@ function createParserContext(
   }
 }
 
+/*
+  parseChildren 主要是根据html的规则来解析源代码的；
+    - parseInterpolation ——  解析插值语法{{}}
+    - parseComment —— 解析注释 <!--
+    - parseBogusComment —— 解析文档声明 <!DOCTYPE
+    - parseTag —— 解析标签 div等
+    - parseElement —— 解析元素节点
+    - parseText —— 解析文本
+  返回节点数组集合 nodes
+ */
 function parseChildren(
   context: ParserContext,
   mode: TextModes,
@@ -1068,11 +1085,14 @@ function parseTextData(
   }
 }
 
+// 获取 context 的位置信息
 function getCursor(context: ParserContext): Position {
   const { column, line, offset } = context
   return { column, line, offset }
 }
 
+// 获取代码位置信息以及源代码；
+// source 是会跟着光标移动截取的；一点一点的过掉；
 function getSelection(
   context: ParserContext,
   start: Position,

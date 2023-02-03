@@ -82,6 +82,9 @@ const normalizeSlot = (
   return normalized
 }
 
+/**
+ * 把 slot 处理成函数形式：方便支持具名插槽等；
+ */
 const normalizeObjectSlots = (
   rawSlots: RawSlots,
   slots: InternalSlots,
@@ -130,6 +133,14 @@ const normalizeVNodeSlots = (
   instance.slots.default = () => normalized
 }
 
+/**
+ * 初始化 slot
+ * SLOT_CHILDREN：组件类型 + object children
+ * 最后都处理成函数形式：
+ * 默认 slot（<slot></slot>）：default: (() => [ _createTextVNode(" slot ")]),
+ * 具名 slot（template v-slot:header）：header: (() => [ _createTextVNode(" slot ")]),
+ * 作用域 slot：(template v-slot:default="slotProps")：default: ((slotProps) => [ _createTextVNode(" slot ")]),
+ */
 export const initSlots = (
   instance: ComponentInternalInstance,
   children: VNodeNormalizedChildren

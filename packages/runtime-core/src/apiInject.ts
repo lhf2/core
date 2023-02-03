@@ -5,6 +5,10 @@ import { warn } from './warning'
 
 export interface InjectionKey<T> extends Symbol {}
 
+/**
+ * 实现 provide：provide(key, value)
+ * 巧妙使用原型链
+ */
 export function provide<T>(key: InjectionKey<T> | string | number, value: T) {
   if (!currentInstance) {
     if (__DEV__) {
@@ -19,7 +23,11 @@ export function provide<T>(key: InjectionKey<T> | string | number, value: T) {
     // parent and let the prototype chain do the work.
     const parentProvides =
       currentInstance.parent && currentInstance.parent.provides
+    // init
+    // 因为如果当前provide没有设置的话 默认引用到parent.provides
     if (parentProvides === provides) {
+      // 这块巧妙使用了原型链
+      // 如果当前设置的话，因为是引用类型，parent.provides也会被修改，必须要使用原型链
       provides = currentInstance.provides = Object.create(parentProvides)
     }
     // TS doesn't allow symbol as index type
@@ -27,6 +35,13 @@ export function provide<T>(key: InjectionKey<T> | string | number, value: T) {
   }
 }
 
+/**
+ * 实现 inject：inject(key)
+ * inject 会沿着原型链一直往上找父的 provide
+ * inject 可以设置默认值：
+ * 1. 普通值：inject("baz", "bazDefault");
+ * 2. 函数：inject("baz", ()=> "bazDefault");
+ */
 export function inject<T>(key: InjectionKey<T> | string): T | undefined
 export function inject<T>(
   key: InjectionKey<T> | string,
@@ -50,6 +65,7 @@ export function inject(
     // #2400
     // to support `app.use` plugins,
     // fallback to appContext's `provides` if the instance is at root
+    // inject 会 沿着原型链一直往上找
     const provides =
       instance.parent == null
         ? instance.vnode.appContext && instance.vnode.appContext.provides
@@ -59,6 +75,7 @@ export function inject(
       // TS doesn't allow symbol as index type
       return provides[key as string]
     } else if (arguments.length > 1) {
+      // inject 可以设置默认值（函数、传入值两种方式）
       return treatDefaultAsFactory && isFunction(defaultValue)
         ? defaultValue.call(instance.proxy)
         : defaultValue

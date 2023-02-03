@@ -447,6 +447,7 @@ export function traverseNode(
       break
 
     // for container types, further traverse downwards
+    // 如果是if，多个分支都要递归调用traverseNode
     case NodeTypes.IF:
       for (let i = 0; i < node.branches.length; i++) {
         traverseNode(node.branches[i], context)

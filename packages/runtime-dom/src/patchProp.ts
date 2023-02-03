@@ -10,6 +10,9 @@ const nativeOnRE = /^on[a-z]/
 
 type DOMRendererOptions = RendererOptions<Node, Element>
 
+/**
+ * 处理 el 的 props：class、style、事件绑定等
+ */
 export const patchProp: DOMRendererOptions['patchProp'] = (
   el,
   key,

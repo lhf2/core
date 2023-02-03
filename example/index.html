@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="../packages/vue/dist/vue.global.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<script>
+  const { createApp, reactive, effect } = Vue;
+  const myComponent = {
+    template: `
+            <button @click="reverseMsg">
+                {{state.message}}
+            </button>
+          `,
+    setup(props, { attrs, slots, emit }) {
+      const state = reactive({
+        message: "Hello Vue3!!!"
+      });
+
+      const effectFn = () => {
+        console.log("message change", state.message);
+      }
+      effect(effectFn);
+
+      function reverseMsg() {
+        state.message = state.message.split("").reverse().join("");
+      }
+
+      return {
+        state,
+        reverseMsg
+      };
+    }
+  };
+  createApp(myComponent).mount('#app');
+</script>
+</body>
+</html>

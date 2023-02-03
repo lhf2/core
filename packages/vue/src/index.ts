@@ -17,7 +17,10 @@ function compileToFunction(
   template: string | HTMLElement,
   options?: CompilerOptions
 ): RenderFunction {
+  // template 是否是字符串
   if (!isString(template)) {
+    // 是元素，取 innerHTML 做模版；
+    // template: document.getElementById('el') 此时 nodeType = 1;
     if (template.nodeType) {
       template = template.innerHTML
     } else {
@@ -32,6 +35,8 @@ function compileToFunction(
     return cached
   }
 
+  // 是否是元素选择器 获取 el 得到 innerHTML 做模版；
+  // template: "#el"
   if (template[0] === '#') {
     const el = document.querySelector(template)
     if (__DEV__ && !el) {
@@ -57,6 +62,7 @@ function compileToFunction(
     opts.isCustomElement = tag => !!customElements.get(tag)
   }
 
+  // 根据模版进行编译 生成可执行的 render 函数的 code
   const { code } = compile(template, opts)
 
   function onError(err: CompilerError, asWarning = false) {
@@ -77,6 +83,8 @@ function compileToFunction(
   // with keys that cannot be mangled, and can be quite heavy size-wise.
   // In the global build we know `Vue` is available globally so we can avoid
   // the wildcard object.
+  // 根据编译出来的 code 生成 render 函数
+  // new Function() 跟 eval() 一样 是可以执行字符串代码的；
   const render = (
     __GLOBAL__ ? new Function(code)() : new Function('Vue', code)(runtimeDom)
   ) as RenderFunction

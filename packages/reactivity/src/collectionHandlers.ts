@@ -15,6 +15,7 @@ const toShallow = <T extends unknown>(value: T): T => value
 const getProto = <T extends CollectionTypes>(v: T): any =>
   Reflect.getPrototypeOf(v)
 
+// map 类型的才有 get 方法，处理 map、WeakMap; 
 function get(
   target: MapTypes,
   key: unknown,
@@ -66,11 +67,14 @@ function size(target: IterableCollections, isReadonly = false) {
   return Reflect.get(target, 'size', target)
 }
 
+// set 类型才有 add, 处理的是 set、weakSet
 function add(this: SetTypes, value: unknown) {
   value = toRaw(value)
   const target = toRaw(this)
   const proto = getProto(target)
   const hadKey = proto.has.call(target, value)
+  // 如果 target 没有此 key
+  // 调用 add 新增，触发 trigger ADD
   if (!hadKey) {
     target.add(value)
     trigger(target, TriggerOpTypes.ADD, value, value)
@@ -78,6 +82,7 @@ function add(this: SetTypes, value: unknown) {
   return this
 }
 
+// set 是 map 类型才有的 map/weakMap
 function set(this: MapTypes, key: unknown, value: unknown) {
   value = toRaw(value)
   const target = toRaw(this)
@@ -91,6 +96,8 @@ function set(this: MapTypes, key: unknown, value: unknown) {
     checkIdentityKeys(target, has, key)
   }
 
+  // 调用 set 添加键值对
+  // 执行 trigger，通过是否有 key：ADD/SET
   const oldValue = get.call(target, key)
   target.set(key, value)
   if (!hadKey) {
@@ -170,6 +177,7 @@ interface IterationResult {
   done: boolean
 }
 
+// 处理 keys values entries
 function createIterableMethod(
   method: string | symbol,
   isReadonly: boolean,
@@ -185,7 +193,10 @@ function createIterableMethod(
     const isPair =
       method === 'entries' || (method === Symbol.iterator && targetIsMap)
     const isKeyOnly = method === 'keys' && targetIsMap
+    // 执行 map.keys() 等方法；
     const innerIterator = target[method](...args)
+    // 根据传入的类型对 value 进行处理（变成 readonly 或者 reactive）
+    // track 如果是 keys() 收集依赖 MAP_KEY_ITERATE_KEY 其他的 收集依赖 ITERATE
     const wrap = isShallow ? toShallow : isReadonly ? toReadonly : toReactive
     !isReadonly &&
       track(
@@ -195,10 +206,19 @@ function createIterableMethod(
       )
     // return a wrapped iterator which returns observed versions of the
     // values emitted from the real iterator
+
+    // 返回一个 wrapped 完成的迭代器 数据都变成了响应式的
+    // new Map([3,4]).keys() 返回一个 Iterator 对象；通过 keys().next().value 来获取值；
+    /*{
+      next(),
+      Symbol.iterator()
+    }*/
+
     return {
       // iterator protocol
       next() {
         const { value, done } = innerIterator.next()
+        // 如果是 entries 方法，因为 entries 会返回键值对，需要把两个都 wrap 成响应式的
         return done
           ? { value, done }
           : {
@@ -258,6 +278,7 @@ function createInstrumentations() {
     forEach: createForEach(false, true)
   }
 
+  // readonly 不能执行 add set delete clear 方法；
   const readonlyInstrumentations: Record<string, Function> = {
     get(this: MapTypes, key: unknown) {
       return get(this, key, true)

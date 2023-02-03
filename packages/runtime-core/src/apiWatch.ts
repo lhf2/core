@@ -363,6 +363,7 @@ function doWatch(
     scheduler = () => queueJob(job)
   }
 
+  // scheduler 内部根据 cb（sync、post、pre） 的执行时机来决定
   const effect = new ReactiveEffect(getter, scheduler)
 
   if (__DEV__) {
@@ -372,6 +373,7 @@ function doWatch(
 
   // initial run
   if (cb) {
+    // 如果是立即执行
     if (immediate) {
       job()
     } else {

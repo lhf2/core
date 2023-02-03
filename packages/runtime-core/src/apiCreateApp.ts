@@ -187,6 +187,11 @@ export type CreateAppFunction<HostElement> = (
 
 let uid = 0
 
+/**
+ * 返回 createApp 函数；createApp 内部返回 app 实例；
+ * 里面有很多方法：use、mixin、component、directive、mount 等等
+ * vue2 是使用全局方法调用的 vue3 是通过 app 实例调用的 还可以链式调用
+ */
 export function createAppAPI<HostElement>(
   render: RootRenderFunction<HostElement>,
   hydrate?: RootHydrateFunction
@@ -206,6 +211,8 @@ export function createAppAPI<HostElement>(
 
     let isMounted = false
 
+    // app 实例中定义了之前 vue2 的很多全局方法，每个都返回了 app 实例，方便链式调用；
+    // vue3 的调用都是创建出 app 实例在调用，这步是为了 tree shaking 的优化；
     const app: App = (context.app = {
       _uid: uid++,
       _component: rootComponent as ConcreteComponent,
@@ -291,6 +298,11 @@ export function createAppAPI<HostElement>(
         return app
       },
 
+      /**
+       * 执行 mount 方法，也就是我们平时入口文件写的 createApp(App).mount(el)；
+       * 1. 基于 rootComponent 创建虚拟节点；
+       * 2. 执行 render 函数，内部其实是 patch 函数；
+      */
       mount(
         rootContainer: HostElement,
         isHydrate?: boolean,
@@ -305,12 +317,14 @@ export function createAppAPI<HostElement>(
                 ` you need to unmount the previous app by calling \`app.unmount()\` first.`
             )
           }
+          // 1. 基于 rootComponent 创建虚拟节点
           const vnode = createVNode(
             rootComponent as ConcreteComponent,
             rootProps
           )
           // store app context on the root VNode.
           // this will be set on the root instance on initial mount.
+          // 设置虚拟节点的 appContext 为 context;
           vnode.appContext = context
 
           // HMR root reload
@@ -323,6 +337,8 @@ export function createAppAPI<HostElement>(
           if (isHydrate && hydrate) {
             hydrate(vnode as VNode<Node, Element>, rootContainer as any)
           } else {
+            // 执行 render 函数
+            // 这里的 render 函数是 createAppAPI 传入的，也就是 baseCreateRenderer 里面创建的 render 函数；实际上就是 patch 函数；
             render(vnode, rootContainer, isSVG)
           }
           isMounted = true

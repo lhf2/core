@@ -371,6 +371,7 @@ function genFunctionPreamble(ast: RootNode, context: CodegenContext) {
   push(`return `)
 }
 
+// 拼接成 es6 module 的形式； import .. form ..
 function genModulePreamble(
   ast: RootNode,
   context: CodegenContext,

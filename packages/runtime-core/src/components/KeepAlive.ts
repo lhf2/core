@@ -81,12 +81,13 @@ const KeepAliveImpl: ComponentOptions = {
   __isKeepAlive: true,
 
   props: {
-    include: [String, RegExp, Array],
-    exclude: [String, RegExp, Array],
-    max: [String, Number]
+    include: [String, RegExp, Array], // 应该被缓存的组件
+    exclude: [String, RegExp, Array], // 不应该被缓存的组件
+    max: [String, Number] // 可以缓存的最大容量
   },
 
   setup(props: KeepAliveProps, { slots }: SetupContext) {
+    // 当前 KeepAlive 组件的实例
     const instance = getCurrentInstance()!
     // KeepAlive communicates with the instantiated renderer via the
     // ctx where the renderer passes in its internals,
@@ -104,6 +105,7 @@ const KeepAliveImpl: ComponentOptions = {
       }
     }
 
+    // 缓存的是 key -> vNode
     const cache: Cache = new Map()
     const keys: Keys = new Set()
     let current: VNode | null = null
@@ -122,8 +124,11 @@ const KeepAliveImpl: ComponentOptions = {
         o: { createElement }
       }
     } = sharedContext
+    // 创建隐藏容器
     const storageContainer = createElement('div')
 
+    // 激活
+    // 当重新“挂载”该组件时，它也不会被真的挂载，而会被从隐藏容器中取出，再“放回”原来的容器中，即页面中。
     sharedContext.activate = (vnode, container, anchor, isSVG, optimized) => {
       const instance = vnode.component!
       move(vnode, container, anchor, MoveType.ENTER, parentSuspense)
@@ -156,6 +161,8 @@ const KeepAliveImpl: ComponentOptions = {
       }
     }
 
+    // 失活
+    // “卸载”一个被 KeepAlive 的组件时，它并不会真的被卸载，而会被移动到一个隐藏容器中。
     sharedContext.deactivate = (vnode: VNode) => {
       const instance = vnode.component!
       move(vnode, storageContainer, null, MoveType.LEAVE, parentSuspense)
@@ -321,6 +328,7 @@ const KeepAliveImpl: ComponentOptions = {
         keys.add(key)
         // prune oldest entry
         if (max && keys.size > parseInt(max as string, 10)) {
+          // lru 缓存
           pruneCacheEntry(keys.values().next().value)
         }
       }

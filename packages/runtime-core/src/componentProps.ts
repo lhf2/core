@@ -151,6 +151,10 @@ type NormalizedProp =
 export type NormalizedProps = Record<string, NormalizedProp>
 export type NormalizedPropsOptions = [NormalizedProps, string[]] | []
 
+/**
+ * 初始化组件的 props：<comp :foo="foo"></comp>
+ * 直接赋值 instance.props = shallowReactive(props)
+ */
 export function initProps(
   instance: ComponentInternalInstance,
   rawProps: Data | null,

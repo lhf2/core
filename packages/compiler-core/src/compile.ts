@@ -29,10 +29,10 @@ export function getBaseTransformPreset(
 ): TransformPreset {
   return [
     [
-      transformOnce,
-      transformIf,
-      transformMemo,
-      transformFor,
+      transformOnce, // v-once
+      transformIf, // v-if v-else-if v-else
+      transformMemo, // v-memo
+      transformFor, // v-for
       ...(__COMPAT__ ? [transformFilter] : []),
       ...(!__BROWSER__ && prefixIdentifiers
         ? [
@@ -43,19 +43,24 @@ export function getBaseTransformPreset(
         : __BROWSER__ && __DEV__
         ? [transformExpression]
         : []),
-      transformSlotOutlet,
-      transformElement,
-      trackSlotScopes,
-      transformText
+      transformSlotOutlet, //$slots
+      transformElement, // element
+      trackSlotScopes, // slot
+      transformText // text
     ],
     {
-      on: transformOn,
-      bind: transformBind,
-      model: transformModel
+      on: transformOn, // v-on
+      bind: transformBind, // v-bind
+      model: transformModel // v-model
     }
   ]
 }
 
+/*
+* 1. 通过 baseParse 把 template 转成 模版AST；
+* 2. 通过 transform 转化 jsAST；
+* 3. 通过 generate 生成 render 函数所需要的 code；
+*/
 // we name it `baseCompile` so that higher order compilers like
 // @vue/compiler-dom can export `compile` while re-exporting everything else.
 export function baseCompile(
@@ -82,6 +87,7 @@ export function baseCompile(
     onError(createCompilerError(ErrorCodes.X_SCOPE_ID_NOT_SUPPORTED))
   }
 
+  // 将模版编译成 AST 抽象语法树
   const ast = isString(template) ? baseParse(template, options) : template
   const [nodeTransforms, directiveTransforms] =
     getBaseTransformPreset(prefixIdentifiers)
@@ -93,6 +99,7 @@ export function baseCompile(
     }
   }
 
+  // 转化 ast
   transform(
     ast,
     extend({}, options, {
@@ -109,6 +116,7 @@ export function baseCompile(
     })
   )
 
+  // 代码生成
   return generate(
     ast,
     extend({}, options, {

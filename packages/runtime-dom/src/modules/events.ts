@@ -30,6 +30,9 @@ export function removeEventListener(
   el.removeEventListener(event, handler, options)
 }
 
+/**
+ * 处理事件：addEventListener 添加，removeEventListener 删除；
+ */
 export function patchEvent(
   el: Element & { _vei?: Record<string, Invoker | undefined> },
   rawName: string,

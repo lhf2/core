@@ -39,6 +39,12 @@ let renderer: Renderer<Element | ShadowRoot> | HydrationRenderer
 
 let enabledHydration = false
 
+/**
+ * rendererOptions 是 patchProp 跟 nodeOps 的合并配置
+ * patchProp：处理类名、样式、事件、DOM节点的prop、特性attr
+ * nodeOps：节点DOM操作
+ * 作用：返回一个独有平台的渲染器
+ */
 function ensureRenderer() {
   return (
     renderer ||
@@ -63,6 +69,13 @@ export const hydrate = ((...args) => {
   ensureHydrationRenderer().hydrate(...args)
 }) as RootHydrateFunction
 
+/**
+ * 入口 用户使用 createApp(App).mount('#root');
+ * ensureRenderer() -> createRenderer() -> baseCreateRenderer() 创建一个渲染器
+ * 渲染器返回一个对象 里面有 {render，createApp}
+ * 其中 createApp 是调用 createAppAPI(render) 返回的，createApp 里面返回一个 app 实例，里面有 mount 方法；
+ * 重写 app.mount 方法：如果组件没有 render 也没有 template，找到 app.mount(containerOrSelector) 里面传入的 containerOrSelector 获取它的 innerHTML 作为 template, 执行原来的 mount 方法;
+ */
 export const createApp = ((...args) => {
   const app = ensureRenderer().createApp(...args)
 

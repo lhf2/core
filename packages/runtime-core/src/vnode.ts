@@ -139,16 +139,16 @@ export interface VNode<
   /**
    * @internal
    */
-  __v_isVNode: true
+  __v_isVNode: true //是否是虚拟节点的标识
 
   /**
    * @internal
    */
   [ReactiveFlags.SKIP]: true
 
-  type: VNodeTypes
-  props: (VNodeProps & ExtraProps) | null
-  key: string | number | symbol | null
+  type: VNodeTypes  //节点的类型
+  props: (VNodeProps & ExtraProps) | null  //属性
+  key: string | number | symbol | null //key值
   ref: VNodeNormalizedRef | null
   /**
    * SFC only. This is assigned on vnode creation using currentScopeId
@@ -163,13 +163,13 @@ export interface VNode<
    * @internal
    */
   slotScopeIds: string[] | null
-  children: VNodeNormalizedChildren
+  children: VNodeNormalizedChildren  //子节点
   component: ComponentInternalInstance | null
   dirs: DirectiveBinding[] | null
   transition: TransitionHooks<HostElement> | null
 
   // DOM
-  el: HostNode | null
+  el: HostNode | null //真正的dom元素
   anchor: HostNode | null // fragment anchor
   target: HostElement | null // teleport target
   targetAnchor: HostNode | null // teleport target anchor
@@ -191,16 +191,16 @@ export interface VNode<
   ssFallback: VNode | null
 
   // optimization only
-  shapeFlag: number
-  patchFlag: number
+  shapeFlag: number //形态标识
+  patchFlag: number //patch动态变化的标识
   /**
    * @internal
    */
-  dynamicProps: string[] | null
+  dynamicProps: string[] | null //动态变化的属性
   /**
    * @internal
    */
-  dynamicChildren: VNode[] | null
+  dynamicChildren: VNode[] | null //动态变化的子节点
 
   // application root node only
   appContext: AppContext | null

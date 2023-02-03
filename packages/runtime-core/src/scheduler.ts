@@ -50,6 +50,9 @@ let currentFlushPromise: Promise<void> | null = null
 const RECURSION_LIMIT = 100
 type CountMap = Map<SchedulerJob, number>
 
+/*
+ * nextTick 实际就是创建一个微任务 promise.then 执行 fn
+ */
 export function nextTick<T = void>(
   this: T,
   fn?: (this: T) => void

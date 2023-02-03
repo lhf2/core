@@ -592,6 +592,11 @@ export function isStatefulComponent(instance: ComponentInternalInstance) {
 
 export let isInSSRComponentSetup = false
 
+/**
+ * 1. 初始化组件的 props slots
+ * 2. 返回经过处理的 setup
+ *
+ */
 export function setupComponent(
   instance: ComponentInternalInstance,
   isSSR = false
@@ -600,15 +605,30 @@ export function setupComponent(
 
   const { props, children } = instance.vnode
   const isStateful = isStatefulComponent(instance)
+  // 初始化 props
   initProps(instance, props, isStateful, isSSR)
+  // 初始化 slots
   initSlots(instance, children)
-
+  // 1. 设置代理 可以通过 this.xxx 就能访问到 setup返回的值
+  // 2. 调用 setup() 得到 setupResult
+  // 3. 处理 setupResult
+  //       - promise：执行 promise.then()
+  //       - function: 默认为组件实例的 render，赋值给 instance.render
+  //       - object(常用): 通过 unRef 解构 ref，并赋值给 instance.setupState
+  // 4. 设置 render 函数
   const setupResult = isStateful
     ? setupStatefulComponent(instance, isSSR)
     : undefined
   isInSSRComponentSetup = false
   return setupResult
 }
+
+/**
+ * 1. 设置代理：可通过 this.xxx 获取 setup 里面的返回值
+ * 2. call setup()
+ * 3. 处理 setup 的返回值
+ * 4. 设置 render 函数 instance.render
+ */
 
 function setupStatefulComponent(
   instance: ComponentInternalInstance,
@@ -644,6 +664,7 @@ function setupStatefulComponent(
   instance.accessCache = Object.create(null)
   // 1. create public instance / render proxy
   // also mark it raw so it's never observed
+    // 1. 设置代理
   instance.proxy = markRaw(new Proxy(instance.ctx, PublicInstanceProxyHandlers))
   if (__DEV__) {
     exposePropsOnRenderContext(instance)
@@ -651,11 +672,15 @@ function setupStatefulComponent(
   // 2. call setup()
   const { setup } = Component
   if (setup) {
+    // setup 的 第二个参数 里面有emit
+    // emit(eventName, ...args)
     const setupContext = (instance.setupContext =
       setup.length > 1 ? createSetupContext(instance) : null)
 
     setCurrentInstance(instance)
     pauseTracking()
+    // 调用 setup 的时候 setup 有两个参数 setup(props, { attrs, slots, emit, expose }) 第一个参数为 props
+    // props 是 shallowReadonly 的；
     const setupResult = callWithErrorHandling(
       setup,
       instance,
@@ -665,6 +690,7 @@ function setupStatefulComponent(
     resetTracking()
     unsetCurrentInstance()
 
+    // 3. 处理 setupResult
     if (isPromise(setupResult)) {
       setupResult.then(unsetCurrentInstance, unsetCurrentInstance)
       if (isSSR) {
@@ -699,10 +725,17 @@ function setupStatefulComponent(
       handleSetupResult(instance, setupResult, isSSR)
     }
   } else {
+    // 4. 设置 render 函数
     finishComponentSetup(instance, isSSR)
   }
 }
 
+
+/**
+ * 处理 setup 返回值
+ *   - function: 默认为组件实例的 render，赋值给 instance.render
+ *   - object(常用): 通过 proxyRefs 包裹，并赋值给 instance.setupState
+ */
 export function handleSetupResult(
   instance: ComponentInternalInstance,
   setupResult: unknown,
@@ -767,6 +800,10 @@ export function registerRuntimeCompiler(_compile: any) {
 // dev only
 export const isRuntimeOnly = () => !compile
 
+/**
+ * 设置 instance.render
+ * 优先级：setup返回的是函数 > 用户设置的render > template编译生成的render
+*/
 export function finishComponentSetup(
   instance: ComponentInternalInstance,
   isSSR: boolean,
@@ -784,6 +821,7 @@ export function finishComponentSetup(
 
   // template / render function normalization
   // could be already set when returned from setup()
+
   if (!instance.render) {
     // only do on-the-fly compile if not in SSR - SSR on-the-fly compilation
     // is done by server-renderer
@@ -819,6 +857,7 @@ export function finishComponentSetup(
             extend(finalCompilerOptions.compatConfig, Component.compatConfig)
           }
         }
+        // 通过 template 模版编译生成 render
         Component.render = compile(template, finalCompilerOptions)
         if (__DEV__) {
           endMeasure(instance, `compile`)

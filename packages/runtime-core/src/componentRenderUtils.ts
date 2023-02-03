@@ -320,6 +320,9 @@ const isElementRoot = (vnode: VNode) => {
   )
 }
 
+/**
+ * 基于组件的 props 跟 children（slots） 判断组件是否应该更新
+ */
 export function shouldUpdateComponent(
   prevVNode: VNode,
   nextVNode: VNode,

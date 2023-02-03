@@ -70,12 +70,18 @@ export type EmitFn<
       }[Event]
     >
 
+/**
+ * 实现 emit 方法
+ * 子组件通过在 setup 中调用 emit(eventName, ...args);
+ * 父组件在 props 中通过 on+eventName 监听，如果有 fn,则执行；
+*/
 export function emit(
   instance: ComponentInternalInstance,
   event: string,
   ...rawArgs: any[]
 ) {
   if (instance.isUnmounted) return
+  // 获取组件的 props
   const props = instance.vnode.props || EMPTY_OBJ
 
   if (__DEV__) {
@@ -150,6 +156,7 @@ export function emit(
     }
   }
 
+  // 判断传入的props里是否绑定此事件名
   let handlerName
   let handler =
     props[(handlerName = toHandlerKey(event))] ||
@@ -161,6 +168,7 @@ export function emit(
     handler = props[(handlerName = toHandlerKey(hyphenate(event)))]
   }
 
+  // 如果绑定了，则执行。把 args 参数也传入
   if (handler) {
     callWithAsyncErrorHandling(
       handler,
